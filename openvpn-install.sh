@@ -1,8 +1,8 @@
 #!/bin/bash
 # shellcheck disable=SC1091,SC2164,SC2034,SC1072,SC1073,SC1009
 
-# Secure OpenVPN server installer for Debian, Ubuntu, CentOS, Amazon Linux 2, Fedora, Oracle Linux 8, Arch Linux, Rocky Linux and AlmaLinux.
-# https://github.com/angristan/openvpn-install
+# Secure OpenVPN server installer for Debian, Ubuntu, CentOS, Anolis Linux 8.4, Amazon Linux 2, Fedora, Oracle Linux 8, Arch Linux, Rocky Linux and AlmaLinux.
+# https://github.com/dinglimingzh/openvpn-install
 
 function isRoot() {
 	if [ "$EUID" -ne 0 ]; then
@@ -55,7 +55,7 @@ function checkOS() {
 		if [[ $ID == "fedora" || $ID_LIKE == "fedora" ]]; then
 			OS="fedora"
 		fi
-		if [[ $ID == "centos" || $ID == "rocky" || $ID == "almalinux" ]]; then
+		if [[ $ID == "centos" || $ID == "rocky" || $ID == "almalinux" || $ID == "anolis" ]]; then
 			OS="centos"
 			if [[ ! $VERSION_ID =~ (7|8) ]]; then
 				echo "⚠️ Your version of CentOS is not supported."
@@ -80,6 +80,16 @@ function checkOS() {
 				echo "⚠️ Your version of Amazon Linux is not supported."
 				echo ""
 				echo "The script only support Amazon Linux 2."
+				echo ""
+				exit 1
+			fi
+		fi
+		if [[ $ID == "anolis" ]]; then
+			OS="anolis"
+			if [[ $VERSION_ID != "8.4" ]]; then
+				echo "⚠️ Your version of Anolis Linux is not supported."
+				echo ""
+				echo "The script only support Anolis Linux 8.4."
 				echo ""
 				exit 1
 			fi
@@ -119,7 +129,7 @@ hide-version: yes
 use-caps-for-id: yes
 prefetch: yes' >>/etc/unbound/unbound.conf
 
-		elif [[ $OS =~ (centos|amzn|oracle) ]]; then
+		elif [[ $OS =~ (centos|amzn|oracle|anolis) ]]; then
 			yum install -y unbound
 
 			# Configuration
@@ -174,7 +184,7 @@ prefetch: yes' >>/etc/unbound/unbound.conf
 access-control: fd42:42:42:42::/112 allow' >>/etc/unbound/unbound.conf
 		fi
 
-		if [[ ! $OS =~ (fedora|centos|amzn|oracle) ]]; then
+		if [[ ! $OS =~ (fedora|centos|amzn|oracl|anolis) ]]; then
 			# DNS Rebinding fix
 			echo "private-address: 10.0.0.0/8
 private-address: fd42:42:42:42::/112
@@ -922,7 +932,7 @@ verb 3" >>/etc/openvpn/server.conf
 	fi
 
 	# Finally, restart and enable OpenVPN
-	if [[ $OS == 'arch' || $OS == 'fedora' || $OS == 'centos' || $OS == 'oracle' ]]; then
+	if [[ $OS == 'arch' || $OS == 'fedora' || $OS == 'centos' || $OS == 'oracle' || $OS == "anolis" ]]; then
 		# Don't modify package-provided service
 		cp /usr/lib/systemd/system/openvpn-server@.service /etc/systemd/system/openvpn-server@.service
 
@@ -1207,7 +1217,7 @@ function removeUnbound() {
 			apt-get remove --purge -y unbound
 		elif [[ $OS == 'arch' ]]; then
 			pacman --noconfirm -R unbound
-		elif [[ $OS =~ (centos|amzn|oracle) ]]; then
+		elif [[ $OS =~ (centos|amzn|oracle|anolis) ]]; then
 			yum remove -y unbound
 		elif [[ $OS == 'fedora' ]]; then
 			dnf remove -y unbound
@@ -1233,7 +1243,7 @@ function removeOpenVPN() {
 		PROTOCOL=$(grep '^proto ' /etc/openvpn/server.conf | cut -d " " -f 2)
 
 		# Stop OpenVPN
-		if [[ $OS =~ (fedora|arch|centos|oracle) ]]; then
+		if [[ $OS =~ (fedora|arch|centos|oracle|anolis) ]]; then
 			systemctl disable openvpn-server@server
 			systemctl stop openvpn-server@server
 			# Remove customised service
@@ -1274,7 +1284,7 @@ function removeOpenVPN() {
 			fi
 		elif [[ $OS == 'arch' ]]; then
 			pacman --noconfirm -R openvpn
-		elif [[ $OS =~ (centos|amzn|oracle) ]]; then
+		elif [[ $OS =~ (centos|amzn|oracle|anolis) ]]; then
 			yum remove -y openvpn
 		elif [[ $OS == 'fedora' ]]; then
 			dnf remove -y openvpn
